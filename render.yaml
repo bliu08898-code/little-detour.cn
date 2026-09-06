@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: little-detour
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: AMAP_WEB_SERVICE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-nano
+      - key: AMAP_INPUT_COORDSYS
+        value: gps
