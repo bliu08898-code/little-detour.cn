@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createQuest, QuestServiceError } from './questService.mjs'
+import { createQuest, fallbackWriting, QuestServiceError } from './questService.mjs'
 
 const originalFetch = globalThis.fetch
 
@@ -64,4 +64,28 @@ test('rejects a known over-budget candidate instead of pretending it is feasible
     }, { AMAP_WEB_SERVICE_KEY: 'test-key' }),
     (error) => error instanceof QuestServiceError && error.code === 'NO_FEASIBLE_PLACE',
   )
+})
+
+test('offers forty distinct grounded mission variants across venue types and vibes', () => {
+  const venues = [
+    ['reading', '街角图书馆', '图书馆'],
+    ['nature', '城市中央公园', '公园'],
+    ['exhibition', '今日美术馆', '美术馆'],
+    ['market', '周末旧物市集', '市场'],
+    ['creative', '南头创意园', '创意园'],
+    ['retail', '城市生活馆', '生活馆'],
+    ['landmark', '海边灯塔', '景点'],
+    ['general', '城市体验空间', '休闲场所'],
+  ]
+  const vibes = ['quiet', 'curious', 'active', 'local', 'surprise']
+  const results = new Set()
+
+  for (const [id, name, category] of venues) {
+    for (const vibe of vibes) {
+      const copy = fallbackWriting({ id, name, category }, { vibe })
+      results.add(`${copy.title}|${copy.mission}|${copy.reason}`)
+    }
+  }
+
+  assert.equal(results.size, 40)
 })
