@@ -294,6 +294,7 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
 
   const grounded = feasible.slice(0, 8)
   let writing = null
+  let generationFallbackReason = null
   try {
     writing = await askQwen({
       input: { vibe: input.vibe, availableMinutes, maxBudget },
@@ -309,6 +310,8 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
     })
   } catch (error) {
     console.warn('[little-detour] LLM unavailable, using grounded writing fallback:', error.message)
+    const status = String(error?.message || '').match(/（(\d{3})/i)?.[1]
+    generationFallbackReason = status ? `model-http-${status}` : 'model-output-invalid-or-timeout'
   }
 
   let selected = grounded.find((item) => item.id === writing?.selectedId) || grounded[0]
@@ -345,5 +348,6 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
       ? `真实地点与步行路线已核验；${caveats.join('；')}。`
       : '真实地点、步行路线、营业时间与预算均已核验。',
     generationSource: writing && selected.id === writing.selectedId ? 'qwen' : 'local-rules',
+    generationFallbackReason,
   }
 }

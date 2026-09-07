@@ -4,6 +4,15 @@ import { createQuest, fallbackWriting, QuestServiceError } from './questService.
 
 const originalFetch = globalThis.fetch
 
+function futureChinaTime(hoursAhead = 6) {
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date())
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const minutes = (Number(values.hour) * 60 + Number(values.minute) + hoursAhead * 60) % 1440
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+}
+
 function json(payload) {
   return new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } })
 }
@@ -38,7 +47,7 @@ test('returns a grounded quest whose place and address come from the POI provide
   const quest = await createQuest({
     input: {
       locationLabel: '我的当前位置', coordinates: { longitude: 114.12, latitude: 22.54 },
-      freeUntil: '23:59', vibe: 'curious', budget: 'custom', customBudget: '200',
+      freeUntil: futureChinaTime(), vibe: 'curious', budget: 'custom', customBudget: '200',
     },
     excludedIds: [],
   }, { AMAP_WEB_SERVICE_KEY: 'test-key' })
@@ -58,7 +67,7 @@ test('rejects a known over-budget candidate instead of pretending it is feasible
     createQuest({
       input: {
         locationLabel: '我的当前位置', coordinates: { longitude: 114.12, latitude: 22.54 },
-        freeUntil: '23:59', vibe: 'curious', budget: '50', customBudget: '',
+        freeUntil: futureChinaTime(), vibe: 'curious', budget: '50', customBudget: '',
       },
       excludedIds: [],
     }, { AMAP_WEB_SERVICE_KEY: 'test-key' }),
