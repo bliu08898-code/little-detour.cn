@@ -14,7 +14,7 @@ services:
       - key: DASHSCOPE_API_KEY
         sync: false
       - key: DASHSCOPE_BASE_URL
-        value: https://dashscope.aliyuncs.com/compatible-mode/v1
+        value: https://ws-86mvcecktpbr30i3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
       - key: QWEN_MODEL
         value: qwen-flash
       - key: AMAP_INPUT_COORDSYS

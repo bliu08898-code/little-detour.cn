@@ -42,7 +42,8 @@ export async function askQwen({ input, candidates }, config = {}) {
   const apiKey = config.apiKey
   if (!apiKey) return null
 
-  const baseUrl = (config.baseUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')
+  if (!config.baseUrl) throw new Error('未配置百炼业务空间 API 地址')
+  const baseUrl = config.baseUrl.replace(/\/$/, '')
   const model = config.model || 'qwen-flash'
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',

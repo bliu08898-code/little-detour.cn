@@ -24,7 +24,7 @@ Mapbox Search Box 的官方 POI 覆盖范围目前不包含中国大陆，因此
 
 1. 复制 `.env.example` 为 `.env`。
 2. 在高德开放平台创建应用并添加“Web 服务”类型 Key，填入 `AMAP_WEB_SERVICE_KEY`。
-3. 如需 AI 选择候选并生成 Mission，填入阿里云百炼的 `DASHSCOPE_API_KEY`。默认使用面向中国大陆服务的 `qwen-flash`；不填写时仍然使用真实地点与真实路线，只会改用本地规则文案。
+3. 如需 AI 选择候选并生成 Mission，填入阿里云百炼的 `DASHSCOPE_API_KEY`，并把控制台显示的业务空间专属 API Host 写入 `DASHSCOPE_BASE_URL`。默认使用面向中国大陆服务的 `qwen-flash`；不填写时仍然使用真实地点与真实路线，只会改用本地规则文案。
 
 密钥只保存在服务端，不会进入浏览器代码。`.env` 已被 Git 忽略。
 

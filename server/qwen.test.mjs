@@ -38,7 +38,7 @@ test('rejects malformed model output so the quest service can use local rules', 
   }), { status: 200, headers: { 'Content-Type': 'application/json' } })
 
   await assert.rejects(
-    askQwen({ input: {}, candidates: [] }, { apiKey: 'test-key' }),
+    askQwen({ input: {}, candidates: [] }, { apiKey: 'test-key', baseUrl: 'https://example.test/v1' }),
     /缺少 title/,
   )
 })
