@@ -16,6 +16,14 @@ const contentTypes = {
   '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json; charset=utf-8',
 }
 
+function safeLlmHost() {
+  try {
+    return new URL(process.env.DASHSCOPE_BASE_URL).hostname
+  } catch {
+    return null
+  }
+}
+
 function json(response, status, payload) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
   response.end(JSON.stringify(payload))
@@ -52,6 +60,7 @@ const server = createServer(async (request, response) => {
       llmConfigured: Boolean(process.env.DASHSCOPE_API_KEY),
       llmProvider: process.env.DASHSCOPE_API_KEY ? 'qwen' : 'local-rules',
       llmModel: process.env.QWEN_MODEL || 'qwen-flash',
+      llmEndpointHost: safeLlmHost(),
     })
   }
 

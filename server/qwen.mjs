@@ -71,8 +71,12 @@ export async function askQwen({ input, candidates }, config = {}) {
   })
 
   if (!response.ok) {
-    const requestId = response.headers.get('x-request-id')
-    throw new Error(`千问请求失败（${response.status}${requestId ? `，request-id: ${requestId}` : ''}）`)
+    const payload = await response.json().catch(() => ({}))
+    const apiCode = String(payload?.error?.code || payload?.code || 'UNKNOWN').replace(/[^a-z0-9_-]/gi, '').slice(0, 64)
+    const error = new Error(`千问请求失败（${response.status}，${apiCode}）`)
+    error.status = response.status
+    error.apiCode = apiCode
+    throw error
   }
 
   const payload = await response.json()

@@ -42,3 +42,14 @@ test('rejects malformed model output so the quest service can use local rules', 
     /缺少 title/,
   )
 })
+
+test('keeps the provider error code but never includes response secrets', async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    code: 'InvalidApiKey', message: 'secret details must stay private',
+  }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+
+  await assert.rejects(
+    askQwen({ input: {}, candidates: [] }, { apiKey: 'test-key', baseUrl: 'https://example.test/v1' }),
+    (error) => error.status === 401 && error.apiCode === 'InvalidApiKey' && !error.message.includes('secret details'),
+  )
+})

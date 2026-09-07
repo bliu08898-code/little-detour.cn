@@ -310,8 +310,9 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
     })
   } catch (error) {
     console.warn('[little-detour] LLM unavailable, using grounded writing fallback:', error.message)
-    const status = String(error?.message || '').match(/（(\d{3})/i)?.[1]
-    generationFallbackReason = status ? `model-http-${status}` : 'model-output-invalid-or-timeout'
+    const status = error?.status || String(error?.message || '').match(/（(\d{3})/i)?.[1]
+    const apiCode = error?.apiCode ? `-${error.apiCode}` : ''
+    generationFallbackReason = status ? `model-http-${status}${apiCode}` : 'model-output-invalid-or-timeout'
   }
 
   let selected = grounded.find((item) => item.id === writing?.selectedId) || grounded[0]
