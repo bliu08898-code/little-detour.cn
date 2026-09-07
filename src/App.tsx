@@ -4,6 +4,7 @@ import {
   ArrowRight,
   AlertTriangle,
   BookOpen,
+  CalendarDays,
   Check,
   CheckCircle2,
   Clock3,
@@ -45,6 +46,23 @@ const loadingSteps = [
   '就选一个，别再纠结了',
   '给这趟出门加点任务感',
 ]
+
+function chinaDateValue(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+function deadlineDateLabel(value: string) {
+  if (!value) return '选择日期'
+  const today = chinaDateValue()
+  const tomorrow = chinaDateValue(new Date(Date.now() + 24 * 60 * 60 * 1000))
+  const [, month, day] = value.split('-').map(Number)
+  const prefix = value === today ? '今天' : value === tomorrow ? '明天' : ''
+  return `${prefix ? `${prefix} · ` : ''}${month}月${day}日`
+}
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -160,6 +178,8 @@ function Setup({ form, setForm, onGenerate, onBack }: SetupProps) {
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [timePickerOpen, setTimePickerOpen] = useState(false)
+  const [draftHour, setDraftHour] = useState('')
+  const [draftMinute, setDraftMinute] = useState('')
   const timePickerRef = useRef<HTMLDivElement>(null)
 
   const useLocation = () => {
@@ -188,9 +208,12 @@ function Setup({ form, setForm, onGenerate, onBack }: SetupProps) {
 
   const customBudget = Number(form.customBudget)
   const hasValidBudget = form.budget !== 'custom' || (Number.isFinite(customBudget) && customBudget > 0)
-  const isValid = form.locationLabel.trim().length > 1 && Boolean(form.freeUntil) && hasValidBudget
-  const fallbackHour = String((new Date().getHours() + 2) % 24).padStart(2, '0')
-  const [selectedHour = fallbackHour, selectedMinute = '00'] = form.freeUntil ? form.freeUntil.split(':') : []
+  const deadlineTimestamp = form.freeUntilDate && form.freeUntil
+    ? Date.parse(`${form.freeUntilDate}T${form.freeUntil}:00+08:00`)
+    : NaN
+  const deadlineMinutes = Math.floor((deadlineTimestamp - Date.now()) / 60000)
+  const hasValidDeadline = Number.isFinite(deadlineMinutes) && deadlineMinutes >= 45
+  const isValid = form.locationLabel.trim().length > 1 && hasValidDeadline && hasValidBudget
 
   useEffect(() => {
     if (!timePickerOpen) return
@@ -209,10 +232,6 @@ function Setup({ form, setForm, onGenerate, onBack }: SetupProps) {
       document.removeEventListener('keydown', closeOnEscape)
     }
   }, [timePickerOpen])
-
-  const setTimePart = (hour: string, minute: string) => {
-    setForm((current) => ({ ...current, freeUntil: `${hour}:${minute}` }))
-  }
 
   return (
     <main className="setup-screen">
@@ -242,32 +261,55 @@ function Setup({ form, setForm, onGenerate, onBack }: SetupProps) {
           </fieldset>
 
           <fieldset>
-            <legend><span>2</span> 几点前都归你？</legend>
+            <legend><span>2</span> 哪天几点前都归你？</legend>
             <div className="time-picker-field" ref={timePickerRef}>
               <button
                 type="button"
                 className="input-wrap time-input-wrap"
-                aria-label={`空闲截止时间${form.freeUntil ? `，当前为 ${form.freeUntil}` : '，尚未选择'}`}
+                aria-label={`空闲截止时间，${deadlineDateLabel(form.freeUntilDate)}${form.freeUntil ? ` ${form.freeUntil}` : '，尚未选择时间'}`}
                 aria-expanded={timePickerOpen}
-                onClick={() => setTimePickerOpen((open) => !open)}
+                onClick={() => {
+                  if (!timePickerOpen) {
+                    const [hour = '', minute = ''] = form.freeUntil ? form.freeUntil.split(':') : []
+                    setDraftHour(hour)
+                    setDraftMinute(minute)
+                  }
+                  setTimePickerOpen((open) => !open)
+                }}
               >
-                <Clock3 size={18} aria-hidden="true" />
-                <span className={form.freeUntil ? '' : 'is-placeholder'}>{form.freeUntil || '--:--'}</span>
+                <CalendarDays size={18} aria-hidden="true" />
+                <span className="deadline-field-copy">
+                  <strong>{deadlineDateLabel(form.freeUntilDate)}</strong>
+                  <small className={form.freeUntil ? '' : 'is-placeholder'}>{form.freeUntil || '--:--'}</small>
+                </span>
               </button>
               {timePickerOpen && (
                 <div className="time-picker-popover" role="group" aria-label="选择空闲截止时间">
-                  <span className="time-picker-caption">SELECT TIME · 选个结束时间</span>
+                  <span className="time-picker-caption">SELECT DEADLINE · 选个结束时间</span>
+                  <label className="date-picker-control">
+                    <span>先选日期</span>
+                    <input
+                      type="date"
+                      aria-label="空闲截止日期"
+                      min={chinaDateValue()}
+                      value={form.freeUntilDate}
+                      onChange={(event) => setForm((current) => ({ ...current, freeUntilDate: event.target.value }))}
+                    />
+                  </label>
+                  <span className="time-picker-section-label">再选时间</span>
                   <div className="time-picker-selects">
                     <label>
                       <span>小时</span>
-                      <select aria-label="小时" value={selectedHour} onChange={(event) => setTimePart(event.target.value, selectedMinute)}>
+                      <select aria-label="小时" value={draftHour} onChange={(event) => setDraftHour(event.target.value)}>
+                        <option value="" disabled>--</option>
                         {Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')).map((hour) => <option key={hour} value={hour}>{hour}</option>)}
                       </select>
                     </label>
                     <b>:</b>
                     <label>
                       <span>分钟</span>
-                      <select aria-label="分钟" value={selectedMinute} onChange={(event) => setTimePart(selectedHour, event.target.value)}>
+                      <select aria-label="分钟" value={draftMinute} onChange={(event) => setDraftMinute(event.target.value)}>
+                        <option value="" disabled>--</option>
                         {Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, '0')).map((minute) => <option key={minute} value={minute}>{minute}</option>)}
                       </select>
                     </label>
@@ -275,17 +317,24 @@ function Setup({ form, setForm, onGenerate, onBack }: SetupProps) {
                   <button
                     type="button"
                     className="time-picker-done"
+                    disabled={!draftHour || !draftMinute}
                     onClick={() => {
-                      if (!form.freeUntil) setTimePart(selectedHour, selectedMinute)
+                      setForm((current) => ({ ...current, freeUntil: `${draftHour}:${draftMinute}` }))
                       setTimePickerOpen(false)
                     }}
                   >
-                    就这个时间 <Check size={15} />
+                    就到这里 <Check size={15} />
                   </button>
                 </div>
               )}
             </div>
-            <p className="field-hint">会给你留出余量，不让下一场安排变成极限赶路。</p>
+            <p className={`field-hint ${form.freeUntil && !hasValidDeadline ? 'is-warning' : ''}`}>
+              {form.freeUntil && deadlineMinutes <= 0
+                ? '这个时间已经过去啦，换一个还没到的时间吧。'
+                : form.freeUntil && deadlineMinutes < 45
+                  ? '至少留出 45 分钟，才够开启一次 LITTLE DETOUR。'
+                  : '默认今天；如果空闲跨过零点，点开就能换到明天或其他日期。'}
+            </p>
           </fieldset>
 
           <fieldset>
@@ -439,7 +488,7 @@ function ErrorScreen({ message, onRetry, onEdit }: { message: string; onRetry: (
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [showBrief, setShowBrief] = useState(false)
-  const [form, setForm] = useState<QuestInput>({ locationLabel: '', freeUntil: '', vibe: 'curious', budget: 'free', customBudget: '' })
+  const [form, setForm] = useState<QuestInput>({ locationLabel: '', freeUntilDate: chinaDateValue(), freeUntil: '', vibe: 'curious', budget: 'free', customBudget: '' })
   const [quest, setQuest] = useState<Quest | null>(null)
   const [seenIds, setSeenIds] = useState<string[]>([])
   const [rerolls, setRerolls] = useState(3)

@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createQuest, fallbackWriting, QuestServiceError } from './questService.mjs'
+import { createQuest, fallbackWriting, minutesUntil, QuestServiceError } from './questService.mjs'
 
 const originalFetch = globalThis.fetch
 
-function futureChinaTime(hoursAhead = 6) {
+function futureChinaDeadline(hoursAhead = 6) {
+  const target = new Date(Date.now() + hoursAhead * 60 * 60 * 1000)
   const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(new Date())
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(target)
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-  const minutes = (Number(values.hour) * 60 + Number(values.minute) + hoursAhead * 60) % 1440
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    time: `${values.hour}:${values.minute}`,
+  }
 }
 
 function json(payload) {
@@ -42,12 +46,19 @@ function installAmapMock() {
 
 test.afterEach(() => { globalThis.fetch = originalFetch })
 
+test('uses an explicit date so a next-day afternoon is never treated as today', () => {
+  const deadline = futureChinaDeadline(6)
+  const result = minutesUntil(deadline.time, deadline.date)
+  assert.ok(result >= 358 && result <= 360)
+})
+
 test('returns a grounded quest whose place and address come from the POI provider', async () => {
   installAmapMock()
+  const deadline = futureChinaDeadline()
   const quest = await createQuest({
     input: {
       locationLabel: '我的当前位置', coordinates: { longitude: 114.12, latitude: 22.54 },
-      freeUntil: futureChinaTime(), vibe: 'curious', budget: 'custom', customBudget: '200',
+      freeUntilDate: deadline.date, freeUntil: deadline.time, vibe: 'curious', budget: 'custom', customBudget: '200',
     },
     excludedIds: [],
   }, { AMAP_WEB_SERVICE_KEY: 'test-key' })
@@ -63,11 +74,12 @@ test('returns a grounded quest whose place and address come from the POI provide
 
 test('rejects a known over-budget candidate instead of pretending it is feasible', async () => {
   installAmapMock()
+  const deadline = futureChinaDeadline()
   await assert.rejects(
     createQuest({
       input: {
         locationLabel: '我的当前位置', coordinates: { longitude: 114.12, latitude: 22.54 },
-        freeUntil: futureChinaTime(), vibe: 'curious', budget: '50', customBudget: '',
+        freeUntilDate: deadline.date, freeUntil: deadline.time, vibe: 'curious', budget: '50', customBudget: '',
       },
       excludedIds: [],
     }, { AMAP_WEB_SERVICE_KEY: 'test-key' }),

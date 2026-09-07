@@ -36,9 +36,16 @@ function chinaClock() {
   return Number(values.hour) * 60 + Number(values.minute)
 }
 
-export function minutesUntil(time) {
+export function minutesUntil(time, date) {
   if (!/^\d{2}:\d{2}$/.test(time)) return NaN
   const [hour, minute] = time.split(':').map(Number)
+  if (hour > 23 || minute > 59) return NaN
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const target = Date.parse(`${date}T${time}:00+08:00`)
+    return Number.isFinite(target) ? Math.floor((target - Date.now()) / 60000) : NaN
+  }
+
   let end = hour * 60 + minute
   const now = chinaClock()
   if (end <= now && end + 1440 - now <= 12 * 60) end += 1440
@@ -219,7 +226,10 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
     throw new QuestServiceError('真实地点服务还没连接好。配置高德 Web 服务 Key 后再试，我不会再用虚构地点敷衍你。', 'CONFIG_REQUIRED', 503)
   }
 
-  const availableMinutes = minutesUntil(input?.freeUntil)
+  const availableMinutes = minutesUntil(input?.freeUntil, input?.freeUntilDate)
+  if (Number.isFinite(availableMinutes) && availableMinutes <= 0) {
+    throw new QuestServiceError('这个截止时间已经过去啦，换一个还没到的时间吧。', 'TIME_IN_PAST')
+  }
   if (!Number.isFinite(availableMinutes) || availableMinutes < 45) {
     throw new QuestServiceError('这段时间有点太短啦，至少留出 45 分钟再开启一次 LITTLE DETOUR。', 'TIME_TOO_SHORT')
   }
@@ -297,7 +307,7 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
   let generationFallbackReason = null
   try {
     writing = await askQwen({
-      input: { vibe: input.vibe, availableMinutes, maxBudget },
+      input: { vibe: input.vibe, availableMinutes, maxBudget, deadlineDate: input.freeUntilDate, deadlineTime: input.freeUntil },
       candidates: grounded.map((item) => ({
         id: item.id, name: item.name, category: item.category,
         walkMinutes: item.travelMinutes, stayMinutes: item.stayMinutes,

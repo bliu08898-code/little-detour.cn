@@ -4,6 +4,7 @@ export type Budget = 'free' | '50' | '100' | 'custom'
 export interface QuestInput {
   locationLabel: string
   coordinates?: { latitude: number; longitude: number }
+  freeUntilDate: string
   freeUntil: string
   vibe: Vibe
   budget: Budget
