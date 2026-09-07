@@ -24,7 +24,7 @@ Mapbox Search Box 的官方 POI 覆盖范围目前不包含中国大陆，因此
 
 1. 复制 `.env.example` 为 `.env`。
 2. 在高德开放平台创建应用并添加“Web 服务”类型 Key，填入 `AMAP_WEB_SERVICE_KEY`。
-3. 如需 AI 生成 Mission，填入 `OPENAI_API_KEY`。不填写时仍然使用真实地点与真实路线，只会改用本地规则文案。
+3. 如需 AI 选择候选并生成 Mission，填入阿里云百炼的 `DASHSCOPE_API_KEY`。默认使用面向中国大陆服务的 `qwen-flash`；不填写时仍然使用真实地点与真实路线，只会改用本地规则文案。
 
 密钥只保存在服务端，不会进入浏览器代码。`.env` 已被 Git 忽略。
 
@@ -51,4 +51,4 @@ npm run dev
 - `GET /api/health`：检查地点与 LLM 服务是否已经配置。
 - `POST /api/quests`：生成一个 grounded Quest。
 
-OpenAI 调用使用 Responses API 的 Structured Outputs，默认模型为 `gpt-5.4-nano`，并设置 `store: false`。可通过 `OPENAI_MODEL` 替换。
+千问调用使用百炼的 OpenAI 兼容接口与 JSON 输出模式，默认模型为 `qwen-flash`。可通过 `QWEN_MODEL` 替换；模型输出还会在服务端进行地点 ID 校验，不合规时自动回退到本地规则。

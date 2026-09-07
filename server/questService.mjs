@@ -1,5 +1,5 @@
 import { convertGpsToAmap, geocodeAddress, getWalkingRoute, reverseGeocode, searchNearby } from './amap.mjs'
-import { askOpenAI } from './openai.mjs'
+import { askQwen } from './qwen.mjs'
 
 export class QuestServiceError extends Error {
   constructor(message, code, status = 400) {
@@ -295,14 +295,18 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
   const grounded = feasible.slice(0, 8)
   let writing = null
   try {
-    writing = await askOpenAI({
-      input: { vibe: input.vibe, availableMinutes, maxBudget, location: origin.formattedAddress },
+    writing = await askQwen({
+      input: { vibe: input.vibe, availableMinutes, maxBudget },
       candidates: grounded.map((item) => ({
-        id: item.id, name: item.name, category: item.category, address: item.address,
+        id: item.id, name: item.name, category: item.category,
         walkMinutes: item.travelMinutes, stayMinutes: item.stayMinutes,
         todayHours: item.hours || '未公开', costPerPerson: item.costValue,
       })),
-    }, config.OPENAI_API_KEY)
+    }, {
+      apiKey: config.DASHSCOPE_API_KEY,
+      baseUrl: config.DASHSCOPE_BASE_URL,
+      model: config.QWEN_MODEL,
+    })
   } catch (error) {
     console.warn('[little-detour] LLM unavailable, using grounded writing fallback:', error.message)
   }
@@ -340,5 +344,6 @@ export async function createQuest({ input, excludedIds = [] }, config = process.
     verificationNote: caveats.length
       ? `真实地点与步行路线已核验；${caveats.join('；')}。`
       : '真实地点、步行路线、营业时间与预算均已核验。',
+    generationSource: writing && selected.id === writing.selectedId ? 'qwen' : 'local-rules',
   }
 }

@@ -11,7 +11,11 @@ services:
     envVars:
       - key: AMAP_WEB_SERVICE_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5.4-nano
+      - key: DASHSCOPE_API_KEY
+        sync: false
+      - key: DASHSCOPE_BASE_URL
+        value: https://dashscope.aliyuncs.com/compatible-mode/v1
+      - key: QWEN_MODEL
+        value: qwen-flash
       - key: AMAP_INPUT_COORDSYS
         value: gps

@@ -49,8 +49,9 @@ const server = createServer(async (request, response) => {
     return json(response, 200, {
       ok: true,
       amapConfigured: Boolean(process.env.AMAP_WEB_SERVICE_KEY),
-      llmConfigured: Boolean(process.env.OPENAI_API_KEY),
-      llmModel: process.env.OPENAI_MODEL || 'gpt-5.4-nano',
+      llmConfigured: Boolean(process.env.DASHSCOPE_API_KEY),
+      llmProvider: process.env.DASHSCOPE_API_KEY ? 'qwen' : 'local-rules',
+      llmModel: process.env.QWEN_MODEL || 'qwen-flash',
     })
   }
 
@@ -76,5 +77,5 @@ const host = process.env.HOST || '0.0.0.0'
 
 server.listen(port, host, () => {
   console.log(`[little-detour] API running at http://${host}:${port}`)
-  console.log(`[little-detour] AMap: ${process.env.AMAP_WEB_SERVICE_KEY ? 'ready' : 'key missing'} · LLM: ${process.env.OPENAI_API_KEY ? 'ready' : 'grounded fallback'}`)
+  console.log(`[little-detour] AMap: ${process.env.AMAP_WEB_SERVICE_KEY ? 'ready' : 'key missing'} · LLM: ${process.env.DASHSCOPE_API_KEY ? 'Qwen ready' : 'grounded fallback'}`)
 })
