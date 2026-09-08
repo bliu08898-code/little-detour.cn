@@ -2,53 +2,5 @@
 
 一个面向旅途中的用户、移动端优先的真实地点决策产品：在限定的时间段内，根据用户的个人偏好与预算，选择一个此刻确实去得了的地点，并附上一项有点意思的小任务。
 
-## 真实链路
-
-```text
-浏览器定位 / 手动地点
-        ↓
-GPS 坐标转高德坐标 + 逆地理编码
-        ↓
-按心情搜索周边真实 POI
-        ↓
-真实步行路线 + 时间 / 营业时间 / 预算硬筛选
-        ↓
-LLM 只能在候选中选一个，并生成 Mission
-        ↓
-真实地址复制 + 高德步行导航
-```
-
-Mapbox Search Box 的官方 POI 覆盖范围目前不包含中国大陆，因此中国区 MVP 已改用高德 Web 服务 API。前端仍不展示地图。
-
-## 配置
-
-1. 复制 `.env.example` 为 `.env`。
-2. 在高德开放平台创建应用并添加“Web 服务”类型 Key，填入 `AMAP_WEB_SERVICE_KEY`。
-3. 如需 AI 选择候选并生成 Mission，填入阿里云百炼的 `DASHSCOPE_API_KEY`，并把控制台显示的业务空间专属 API Host 写入 `DASHSCOPE_BASE_URL`。默认使用面向中国大陆服务的 `qwen-flash`；不填写时仍然使用真实地点与真实路线，只会改用本地规则文案。
-
-密钥只保存在服务端，不会进入浏览器代码。`.env` 已被 Git 忽略。
-
-## 本地运行
-
-```bash
-npm install
-npm run dev
-```
-
-打开 `http://127.0.0.1:5173/`。`npm run dev` 会同时启动网页和本地 API。
-
-## 真实性规则
-
-- 地点名称、地址、坐标只能来自高德 POI 数据。
-- 步行时间来自高德路线规划；接口偶发不可用时才使用距离保守估算。
-- LLM 只能选择候选 ID，不能修改或创造地点事实。
-- 已关闭、时间来不及或已知超预算的地点会在服务端删除。
-- 营业时间或消费信息缺失时，页面必须明确提示，不伪装成“已确认”。
-- 找不到可靠结果时直接说明，不再回退到虚构地点。
-
-## API
-
-- `GET /api/health`：检查地点与 LLM 服务是否已经配置。
-- `POST /api/quests`：生成一个 grounded Quest。
-
-千问调用使用百炼的 OpenAI 兼容接口与 JSON 输出模式，默认模型为 `qwen-flash`。可通过 `QWEN_MODEL` 替换；模型输出还会在服务端进行地点 ID 校验，不合规时自动回退到本地规则。
+<img width="1245" height="741" alt="截屏2026-09-08 22 52 01" src="https://github.com/user-attachments/assets/f6684022-aaaf-4dde-a984-8996bfef751d" />
+<img width="1193" height="776" alt="截屏2026-09-08 22 53 33" src="https://github.com/user-attachments/assets/a9f03305-709f-4162-b24b-b42a3680edde" />
